@@ -8,7 +8,13 @@
     "start": "nuxt start",
     "generate": "nuxt generate",
     "lint:js": "eslint --ext \".js,.vue\" --ignore-path .gitignore .",
-    "lint": "npm run lint:js"
+    "lint": "npm run lint:js",
+    "deploy": "firebase deploy",
+    "deploy:hosting": "firebase deploy --only hosting",
+    "deploy:database": "firebase deploy --only database",
+    "deploy:firestore": "firebase deploy --only firestore",
+    "deploy:storage": "firebase deploy --only storage",
+    "deploy:functions": "firebase deploy --only functions"    
   },
   "dependencies": {
     "@nuxtjs/pwa": "^3.3.5",
@@ -22,6 +28,7 @@
     "babel-eslint": "^10.1.0",
     "eslint": "^7.22.0",
     "eslint-plugin-nuxt": "^2.0.0",
-    "eslint-plugin-vue": "^7.7.0"
+    "eslint-plugin-vue": "^7.7.0",
+    "firebase-tools": "^9.10.0"
   }
 }
