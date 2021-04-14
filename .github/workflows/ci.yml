@@ -41,13 +41,13 @@ jobs:
         run: npm ci
 
 #      - name: Run linter 👀
-#        run: npm run lint
+#        run: npm run lint --message=\"${{ github.event.head_commit.message }}\"
 
       - name: Build the Nuxt.js application and statically export to public/ directory 🧱
         run: npm run generate
 
       - name: Deploy code and assets to the firebase project 🚀
-        run: npm run deploy -- -m \"${{ github.event.head_commit.message }}\"
+        run: npm run deploy
         env:
           FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}        
 
