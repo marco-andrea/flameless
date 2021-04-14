@@ -37,8 +37,10 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-node-
 
-      - name: Install dependencies 👨🏻‍💻
+      - name: Install firebase-tools 🔥
         run: npm install -g firebase-tools
+
+      - name: Install dependencies 👨🏻‍💻
         run: npm ci
 
 #      - name: Run linter 👀
