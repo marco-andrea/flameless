@@ -15,6 +15,8 @@ jobs:
   build_and_deploy:
     name: Deploy Hosting
 
+    timeout-minutes: 10
+
     runs-on: ubuntu-latest
 
     steps:
@@ -48,6 +50,6 @@ jobs:
         working-directory: public
         
       - name: Deploy code and assets to the firebase project 🚀
-        run: firebase deploy --only hosting --message "${{ github.event.head_commit.message }}"
+        run: firebase deploy --only hosting --non-interactive --message "${{ github.event.head_commit.message }}"
         env:
           FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
