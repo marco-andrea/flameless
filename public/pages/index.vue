@@ -7,7 +7,7 @@
       </div>
       <v-card>
         <v-card-title class="headline">
-          Welcome here to the Vuetify + Nuxt.js template
+          Welcome where the Vuetify + Nuxt.js template
         </v-card-title>
         <v-card-text>
           <p>Vuetify is a progressive Material Design component framework for Vue.js. It was designed to empower developers to create amazing applications.</p>
@@ -63,14 +63,10 @@
         </v-card-text>
         <v-card-actions>
           <v-spacer />
-          <v-btn
-            color="primary"
-            nuxt
-            to="/inspire"
-          >
-            Continue
-          </v-btn>
+          <v-btn color="primary" nuxt to="/inspire" >Continue</v-btn>
+          <v-btn color="primary" @click="clickMe">Fire</v-btn>
         </v-card-actions>
+        <pre>{{sites}}</pre>
       </v-card>
     </v-col>
   </v-row>
@@ -84,6 +80,21 @@ export default {
   components: {
     Logo,
     VuetifyLogo
-  }
+  },
+  data() {
+    return {
+      sites: [],
+    }
+  },  
+  methods: {
+    clickMe() {
+        console.log( this.$firebase )
+    }
+  },
+  firestore() {
+    return {
+      sites: this.$firebase.firestore().collection('sites')
+    }
+  },  
 }
 </script>
