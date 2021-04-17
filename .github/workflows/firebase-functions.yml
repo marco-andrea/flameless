@@ -8,8 +8,8 @@ on:
     branches:
       - main
     paths:
+      - 'firebase.json'    
       - 'functions/**'
-      - 'firebase.json'
 
 jobs:
   build_and_deploy:
