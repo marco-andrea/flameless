@@ -56,8 +56,28 @@ export default {
   vuetify: {
     customVariables: ['~/assets/variables.scss'],
     theme: {
-      dark: true,
+      dark: false,      
       themes: {
+        light: {
+          primary: colors.deepOrange.base,
+          secondary: colors.amber.base,
+          accent: colors.orange.base,
+          error: colors.red.base,
+          warning: colors.yellow.base,
+          info: colors.cyan.base,
+          success: colors.lightGreen.base
+        },
+        dark: {
+          primary: colors.deepOrange.darken2,
+          accent: colors.amber.darken3,
+          secondary: colors.orange.darken3,
+          info: colors.red.lighten1,
+          warning: colors.yellow.base,
+          error: colors.cyan.accent4,
+          success: colors.lightGreen.accent3
+        }
+
+        /*        
         dark: {
           primary: colors.blue.darken2,
           accent: colors.grey.darken3,
@@ -67,8 +87,12 @@ export default {
           error: colors.deepOrange.accent4,
           success: colors.green.accent3
         }
-      }
-    }
+        */
+      },
+    },
+    breakpoint: {
+      mobileBreakpoint: 'sm' // This is equivalent to a value of 960
+    }    
   },
 
   // Build Configuration: https://go.nuxtjs.dev/config-build
