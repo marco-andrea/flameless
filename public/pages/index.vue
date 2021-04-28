@@ -27,10 +27,35 @@
   </v-row>
 </template>
 
+<style lang="scss" scoped>
+.v-card {
+  cursor: pointer;
+}
+</style>
+
 <script>
 import Logo from '~/components/Logo.vue'
 import VuetifyLogo from '~/components/VuetifyLogo.vue'
+/*
 
+db.collectionGroup('users').where('userRef', '==', db.collection() ).get().then((querySnapshot) => {
+    querySnapshot.forEach((doc) => {
+        console.log(doc.id, ' => ', doc.data());
+    });
+})
+
+var batch = db.batch();
+siteRef = db.collection("sites").doc();
+batch.set(siteRef, {title: "New Site"});
+batch.set(siteRef.collection("users").doc(firebase.auth().currentUser.uid), {
+role: "admin",
+userRef: db.collection("users").doc( firebase.auth().currentUser.uid ),
+site_owner: true
+});
+
+batch.commit()
+
+*/
 export default { 
   components: {
     Logo,
@@ -55,12 +80,8 @@ export default {
   },
   computed: {
     user () {
+      
       return this.$store.state.user.user
-    }
-  },
-  firestore() {
-    return {
-      sites: this.$firebase.firestore().collection('sites')
     }
   },
   middleware: ['authenticated'],  

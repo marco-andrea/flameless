@@ -1,8 +1,161 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+  
+    function verifyFields(required, optional) {    
+      return request.resource.data.keys().hasAll(required) && request.resource.data.keys().hasOnly( required.concat(optional) );
+    }
+  
+  	// **** SITE ****
+  	match /sites/{site} {
+
+			function userPath() {
+      	return /databases/$(database)/documents/sites/$(site)/users/$(request.auth.uid);
+      }
+
+      function user() {
+      	return get( /databases/$(database)/documents/sites/$(site)/users/$(request.auth.uid) );
+      }
+      
+      function isSiteOwner() {
+      	return user().data.site_owner;
+      }
+
+			// if user belongs to site
+
+    	allow read: if user() != null;
+      
+      allow create: if
+      							verifyFields([], ["title"])
+      							&&
+                    getAfter( userPath() ).data.site_owner == true;
+
+      allow update: if isSiteOwner(); // and schema
+      allow delete: if isSiteOwner();
+      
+      // *** CONTENT TYPE ***
+      match /content/{content} { // posts, pages, etc.
+      
+      	function content() {                	
+        	return get( /databases/$(database)/documents/sites/$(site)/content/$(content) ).data;
+        }
+      
+        allow read: if resource.data.capabilities[ user().data.role ].read;
+
+      	allow create: if isSiteOwner(); // posts, pages, etc.   
+        
+        // *** ITEMS ***
+        match /items/{item} {
+        	// get, list        	
+          allow read: if isSiteOwner() || content().capabilities[ user().data.role ].read;          
+          //allow read: if isSiteOwner() || content().capabilities[ get( memberPath() ).data.role ].read;          
+          
+					allow create: if isSiteOwner() || content().capabilities[ user().data.role ].edit; 
+          allow update: if isSiteOwner() || content().capabilities[ user().data.role ].edit; //edit_others
+          allow delete: if isSiteOwner() || content().capabilities[ user().data.role ].delete; //delete_others
+          
+        }
+        
+        // *** CATEGORIES ***
+        match /categories/{item} {
+        
+          allow read: if isSiteOwner() || content().capabilities[ user().data.role ].read;                    
+					allow write: if isSiteOwner() || content().capabilities[ user().data.role ].manage_categories; 
+          
+        }
+        
+      }
+      
+      // **** SITE USERS ****
+      match /users/{user} {   //members   
+      
+      	// req: 'userRef'. opt: 'role', 'site_owner'
+      	function checkFields() {
+        	return   
+                  request.resource.data.get('siteRef', /databases/$(database)/documents/sites/$(site)) == /databases/$(database)/documents/sites/$(site)
+                  &&
+                  // if provided, check userRef field path existence
+                  get( request.resource.data.get('userRef', /databases/$(database)/documents/users/$(request.resource.id)) )['__name__'][3] == 'users'
+                  &&
+                  request.resource.data.get('role', '') is string
+                  &&                      
+                  request.resource.data.get('site_owner', false) is bool;
+        }
+        
+        
+      	allow get: if user() != null; // isSiteOwner() || 
+        
+        allow create: if 
+        							(
+        								isSiteOwner() 
+        								||
+                        (
+                          !exists( /databases/$(database)/documents/sites/$(site) )
+                          &&
+                          existsAfter( /databases/$(database)/documents/sites/$(site) )
+                        )
+                      )                          	                          
+        							&&
+                      verifyFields(["siteRef", "userRef"], ["role", "site_owner"] ) 
+                      &&
+                      checkFields();
+                      
+                      
+				allow update: if         							
+                      isSiteOwner()
+                      &&
+                      (
+                      	// prevent site owner resign
+                        resource.id != request.auth.uid || request.resource.data.diff(resource.data).unchangedKeys().hasAny(["site_owner"])
+                      )
+                      &&
+                      verifyFields([], ["siteRef", "userRef", "role", "site_owner"] )
+                      &&
+                      checkFields();                                           
+   
+        
+        allow delete: if
+                      (
+                        isSiteOwner()
+                        &&
+                        (                        
+                          // site owner can delete other user from his site  
+                          user != request.auth.uid
+                          ||
+                          // site owner can self delete only when deleting site, to avoid orphan/unowned sites
+                          !existsAfter(/databases/$(database)/documents/sites/$(site))
+                        )
+                      )
+                      ||
+                      // Allow any user to opt out
+                      user == request.auth.uid; 
+                      // || or admin?
+        
+      }
+      
+      
+    }
+    // **** END SITE ****
+    
+    // **** ALL USERS ****
+    match /users/{user} {
+    
+      allow create, update: if user == request.auth.uid && verifyFields([], ['email', 'displayName'] )
+
+    	//allow get: if exists( /databases/$(database)/documents/users/$(request.auth.uid) ); //request.auth.uid != null;
+      allow get: if user == request.auth.uid;//get( /databases/$(database)/documents/users/$(request.auth.uid) );
+      
+    }
+  
+    match /{path=**}/users/{user} { // maybe /members/{member}
+
+      allow list: if resource.data.userRef == /databases/$(database)/documents/users/$(request.auth.uid);    
+      //allow get: if request.auth.uid != null;
+      
+    }  
+  
     match /{document=**} {
-      allow read, write: if true;
+      allow read, write: if false;
     }
   }
 }

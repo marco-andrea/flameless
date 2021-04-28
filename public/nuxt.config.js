@@ -28,6 +28,7 @@ export default {
   // Plugins to run before rendering page: https://go.nuxtjs.dev/config-plugins
   plugins: [
     { src: '~/plugins/firebase.js', mode: 'client' }, // only on client side
+    { src: '~/plugins/router-sync.js', mode: 'client' }, // only on client side
   ],
 
   // Auto import components: https://go.nuxtjs.dev/config-components

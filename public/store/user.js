@@ -1,13 +1,33 @@
 import firebase from 'firebase/app'
 import 'firebase/auth'
 
+const getDefaultState = () => ({
+  apiKey: null,
+  appName: null,
+  authDomain: null,
+  createdAt: null,
+  displayName: null,
+  email: null,
+  emailVerified: null,
+  isAnonymous: null,
+  lastLoginAt: null,
+  multiFactor: null,
+  phoneNumber: null,
+  photoURL: null,
+  providerData: null,
+  redirectEventId: null,
+  stsTokenManager: null,
+  tenantId: null,
+  uid: null,
+})
+
 export const state = () => ({
-  user: null,
+  ...getDefaultState()
 })
 
 export const mutations = {
   set(state, user) {
-    state.user = user
+    Object.assign(state, user)
   },
 }
 
@@ -19,7 +39,7 @@ export const actions = {
     }
   },  
   $init({ commit }) {
-    firebase.auth().onAuthStateChanged(user => commit('set', user ? user.toJSON() : null) )
+    firebase.auth().onAuthStateChanged(user => commit('set', user ? user.toJSON() : getDefaultState()) )
   },
   
 }

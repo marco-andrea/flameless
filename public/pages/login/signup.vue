@@ -1,7 +1,7 @@
 <template>
   <v-form v-model="valid" ref="form" @submit.prevent="signup" @input.native="errorMessages = { email: [], password: []}">
     <v-card-text>
-      <!--
+      
       <v-text-field
         v-model="form.displayName"
         :rules="[v => !!v || 'Name is required']"
@@ -12,7 +12,7 @@
         :disabled="loading"
         required
       />
-      -->
+      
       <v-text-field
         v-model="form.email"
         :error-messages="errorMessages.email"
@@ -92,13 +92,14 @@ export default {
 
         await user.getIdTokenResult(true)
 
-        await this.$firebase.firestore().collection('users').doc(user.uid).set({
-          email: user.email,
-          displayName: user.displayName,
-        }, { merge: true })
+
         
         console.timeEnd("Time this");
         */
+
+        await this.$firebase.firestore().collection('users').doc(user.uid).set({          
+          displayName: this.form.displayName,
+        }, { merge: true })
 
         // TODO: Show message on success
         await this.$router.replace(this.$route.query.redirect_to || '/')

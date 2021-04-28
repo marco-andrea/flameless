@@ -33,14 +33,17 @@ export default {
 }
 </script>
 
-<style>
+
+<style lang="scss">
 
 /* Change autocomplete styles in WebKit */
 input:-webkit-autofill,
 input:-webkit-autofill:hover,
 input:-webkit-autofill:focus {
-  -webkit-text-fill-color: white;
+/* 
+  -webkit-text-fill-color: white; 
   -webkit-box-shadow: 0 0 0px 1000px map-get($material-theme, 'cards') inset;
+*/
   transition: background-color 5000s ease-in-out 0s;
 
 }
