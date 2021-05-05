@@ -19,6 +19,7 @@ exports.sendWelcomeEmail = functions.auth.user().onCreate((user) => {
 
 exports.onCreateSite = functions.firestore.document('sites/{site}').onCreate(async (snap, context) => {
 
+  /*
   const defaultSchema = {
     capabilities: {
       admin: {
@@ -42,6 +43,40 @@ exports.onCreateSite = functions.firestore.document('sites/{site}').onCreate(asy
       },
     }
   };
+  */
+  const defaultSchema = {
+    roles: {      
+      admin: {
+        capabilities: {
+          delete: true,
+          delete_others: true,
+          edit: true,
+          edit_others: true,
+          manage_categories: true,
+          read: true,
+        },
+        order: 0,
+      },
+      editor: {
+        capabilities: {
+          delete: true,
+          delete_others: true,
+          edit: true,
+          edit_others: true,
+          manage_categories: true,
+          read: true,
+        },
+        order: 1,
+      },
+      subscriber: {
+        capabilities: {
+          read: true,
+        },
+        order: 2,        
+      },
+    }
+  };
+
 
   // Load some content
   const batch = db.batch();

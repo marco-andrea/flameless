@@ -29,7 +29,7 @@ export default async function ( root ) {
         let unsubscribe = root.$firebase.auth().onAuthStateChanged( user => { unsubscribe(); resolve(user) } )
     })
 
-    //console.log("fire middle");
+    //console.log("middle user", user);
 
     if (user === null ) {
       root.redirect({ name: 'login'}, { redirect_to: root.route.fullPath })

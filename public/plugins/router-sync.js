@@ -1,6 +1,9 @@
 import _cloneDeep from 'lodash/cloneDeep'
 import Vue from 'vue'
 
+
+// Idea from https://github.com/vuejs/vuex-router-sync/blob/master/src/index.ts
+
 const cloneRoute = (to, from) => {
 
   const clone = {

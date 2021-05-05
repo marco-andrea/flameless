@@ -1,5 +1,10 @@
 <template>
   <v-app>
-    <Nuxt />
+    <v-main>
+        <v-container>
+            <nuxt />
+            <pre></pre>
+        </v-container>
+    </v-main>      
   </v-app>
 </template>

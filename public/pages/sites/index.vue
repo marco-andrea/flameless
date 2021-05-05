@@ -1,17 +1,19 @@
 <template>
     <v-row justify="center" class="pt-5">
-        <h1>sites/index.vue</h1>
+        
         <v-col cols="12" sm="8">
 
-            <v-fade-transition group tag="v-row">
+            <!--<v-row>-->
             
+            <v-fade-transition group tag="div" class="row">
+
                 <v-col cols="12" sm="6" lg="4" key="new">
 
                     <v-hover v-slot="{ hover }" open-delay="0">
                         <v-card v-ripple :elevation="hover ? 4 : 2" class="d-flex" height="250" @click="addSite()">
                         <v-card-text class="align-self-center text-center">
                             <v-icon color="primary" large>mdi-plus</v-icon>
-                            <h3 class="primary--text">Add project</h3>
+                            <h3 class="primary--text">Add project</h3>                            
                         </v-card-text>
                         </v-card>
                     </v-hover>
@@ -20,7 +22,7 @@
                     
                 <v-col cols="12" sm="6" lg="4" v-for="site in sites" :key="site.path">
 
-                    <v-hover v-slot="{ hover }" open-delay="0" v-if="site.siteRef.id">
+                    <v-hover v-slot="{ hover }" open-delay="0" v-if="typeof site.siteRef == 'object' && site.siteRef != null">
                         <v-card v-ripple  :elevation="hover ? 4 : 2" height="250" class="d-flex" :to="{ name: 'sites-siteId', params: { siteId: site.siteRef.id } }"><!--@click="deleteSite(site.siteRef.id)"-->
                             <v-card-text class="align-self-center text-center">                                
                                 <h3 class="primary--text">{{site.siteRef.title}}</h3>                    
@@ -34,8 +36,12 @@
                     </v-hover>                                    
 
                 </v-col>
-            
+
             </v-fade-transition>
+            
+            <!--</v-row>-->
+
+            <pre>{{sites}}</pre>
         </v-col>
     </v-row>
 </template>
@@ -77,9 +83,7 @@ export default {
         sites() {
 
             const user = this.$store.state.user.uid
-
-            if (!user) return false
-            
+            if (!user) return
             const userRef = this.$firebase.firestore().collection("users").doc( user )
             const sitesRef = this.$firebase.firestore().collectionGroup('users').where('userRef', '==', userRef)                        
 
@@ -87,6 +91,9 @@ export default {
         }
     },
     computed: {
+        siteList() {
+            //return this.sites.filter(site => typeof site.siteRef == 'object' &&)
+        }
     },
     watch: {     
     },        

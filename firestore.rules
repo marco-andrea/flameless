@@ -2,136 +2,257 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
   
-    function verifyFields(required, optional) {    
-      return request.resource.data.keys().hasAll(required) && request.resource.data.keys().hasOnly( required.concat(optional) );
+    function verifyFields(required, optional) {
+        return request.resource.data.keys().hasAll(required) && request.resource.data.keys().hasOnly( required.concat(optional) );
     }
-  
+
   	// **** SITE ****
   	match /sites/{site} {
 
-			function userPath() {
-      	return /databases/$(database)/documents/sites/$(site)/users/$(request.auth.uid);
-      }
+        function userPath() {
+            return /databases/$(database)/documents/sites/$(site)/users/$(request.auth.uid);
+        }      
 
-      function user() {
-      	return get( /databases/$(database)/documents/sites/$(site)/users/$(request.auth.uid) );
-      }
-      
-      function isSiteOwner() {
-      	return user().data.site_owner;
-      }
-
-			// if user belongs to site
-
-    	allow read: if user() != null;
-      
-      allow create: if
-      							verifyFields([], ["title"])
-      							&&
-                    getAfter( userPath() ).data.site_owner == true;
-
-      allow update: if isSiteOwner(); // and schema
-      allow delete: if isSiteOwner();
-      
-      // *** CONTENT TYPE ***
-      match /content/{content} { // posts, pages, etc.
-      
-      	function content() {                	
-        	return get( /databases/$(database)/documents/sites/$(site)/content/$(content) ).data;
-        }
-      
-        allow read: if resource.data.capabilities[ user().data.role ].read;
-
-      	allow create: if isSiteOwner(); // posts, pages, etc.   
-        
-        // *** ITEMS ***
-        match /items/{item} {
-        	// get, list        	
-          allow read: if isSiteOwner() || content().capabilities[ user().data.role ].read;          
-          //allow read: if isSiteOwner() || content().capabilities[ get( memberPath() ).data.role ].read;          
-          
-					allow create: if isSiteOwner() || content().capabilities[ user().data.role ].edit; 
-          allow update: if isSiteOwner() || content().capabilities[ user().data.role ].edit; //edit_others
-          allow delete: if isSiteOwner() || content().capabilities[ user().data.role ].delete; //delete_others
-          
+        function user() {
+            return get( /databases/$(database)/documents/sites/$(site)/users/$(request.auth.uid) );
         }
         
-        // *** CATEGORIES ***
-        match /categories/{item} {
+        function isSiteOwner() {
+            return user().data.site_owner;
+        }
+
+        // if user belongs to site
+        allow read: if exists( userPath() ) || existsAfter( userPath() );
         
-          allow read: if isSiteOwner() || content().capabilities[ user().data.role ].read;                    
-					allow write: if isSiteOwner() || content().capabilities[ user().data.role ].manage_categories; 
-          
+        allow create:   if
+                        verifyFields([], ["title"])
+                        &&
+                        getAfter( /databases/$(database)/documents/sites/$(site)/users/$(request.auth.uid) ).data.site_owner == true;
+
+        allow update: if isSiteOwner(); // and schema
+
+        allow delete: if isSiteOwner();
+        
+
+        //.data.capabilities[ user().data.role ] .data.roles[ user().data.role ].capabilities.read
+
+        // ******************** //
+        // *** CONTENT TYPE *** //
+        // ******************** //
+        match /content/{content} { // posts, pages, etc.
+        
+            function content() {                	
+                return get( /databases/$(database)/documents/sites/$(site)/content/$(content) );
+            }            
+
+            allow read: if isSiteOwner() || resource.data.roles[ user().data.role ].capabilities.read;
+
+            allow write: if isSiteOwner(); // posts, pages, etc.   
+            
+            // *** ITEMS ***
+            // /content/{content}/items/{item}
+            match /items/{item} {
+
+                // Required fields:
+                // 'createdAt'
+                // 'updatedAt'
+                // 'author'
+
+                allow read: if ( isSiteOwner() || content().data.roles[ user().data.role ].capabilities.read);
+
+                allow create:   if
+                                // Check required fields 'createdAt' and 'author'
+                                request.resource.data.keys().hasAll(["createdAt", "updatedAt","author"])
+                                &&
+                                
+                                // Validate 'createdAt'
+                                request.resource.data.createdAt == request.time
+                                &&
+                                // Validate 'updatedAt'
+                                request.resource.data.updatedAt == request.time
+                                &&                                
+
+                                // Validate 'author', check if user exits and is member of this site
+                                request.resource.data.author is path 
+                                &&
+                                request.resource.data.author[3] == 'users'
+                                &&
+                                // 
+                                exists( request.resource.data.author ) && exists( /databases/$(database)/documents/sites/$(site)/users/$(request.resource.data.author[4]) )
+
+                                &&
+                                (
+                                    // Allow create if user is siteOwner
+                                    isSiteOwner()
+                                    ||
+                                    // Or if has the capabilities
+                                    content().data.roles[ user().data.role ].capabilities.edit_others
+                                    ||
+                                    // Or if owns this post
+                                    (content().data.roles[ user().data.role ].capabilities.edit && request.resource.data.author == /databases/$(database)/documents/users/$(request.auth.uid) )
+                                ); 
+
+
+                allow update:   if
+                                // Prevent update 'createdAt' field
+                                request.resource.data.diff(resource.data).unchangedKeys().hasAny(["createdAt"])
+                                &&
+
+                                // Check required fields 'updatedAt'
+                                request.resource.data.keys().hasAll(["updatedAt"])
+                                &&
+                                
+                                // Validate 'createdAt'
+                                request.resource.data.updatedAt == request.time
+                                &&
+
+                                // Validate 'author', check if user exits and is member of this site
+                                request.resource.data.author is path 
+                                &&
+                                request.resource.data.author[3] == 'users'
+                                &&                             
+                                exists( request.resource.data.author ) && exists( /databases/$(database)/documents/sites/$(site)/users/$(request.resource.data.author[4]) )
+
+                                &&
+                                (
+                                    // Allow update if user is siteOwner
+                                    isSiteOwner()
+                                    ||
+                                    // Or if has the capabilities to edit post from others
+                                    content().data.roles[ user().data.role ].capabilities.edit_others
+                                    ||
+                                    // Or editing owned posts
+                                    (
+                                        content().data.roles[ user().data.role ].capabilities.edit
+                                        &&
+                                        request.resource.data.diff(resource.data).unchangedKeys().hasAny(["author"])
+                                        &&
+                                        resource.data.author == /databases/$(database)/documents/users/$(request.auth.uid)
+                                    )
+                                );
+                                    
+
+                allow delete: if
+                                // Allow update if user is siteOwner
+                                isSiteOwner()
+                                ||
+                                // Or if has the capabilities to edit post from others
+                                content().data.roles[ user().data.role ].capabilities.delete_others
+                                ||
+                                // Or deleting own post
+                                (
+                                    content().data.roles[ user().data.role ].capabilities.delete
+                                    &&
+                                    resource.data.author == /databases/$(database)/documents/users/$(request.auth.uid)
+                                );
+
+                //  match /comments/{comment} {
+                //  }              
+                
+            }
+            
+            // *** CATEGORIES ***
+            // /content/{content}/categories/{category}
+            match /categories/{category} {
+            
+                allow read: if isSiteOwner() || content().data.roles[ user().data.role ].capabilities.read;                    
+                allow write: if isSiteOwner() || content().data.roles[ user().data.role ].capabilities.manage_categories; 
+                
+            }
+        
+        }
+        // *** END CONTENT TYPE ***
+        
+
+
+        // ****************** //
+        // *** SITE USERS *** //
+        // ****************** //
+        match /users/{user} {   // or members   
+        
+        // req: 'siteRef', 'userRef'. opt: 'role', 'site_owner'
+        function checkFields() {
+            return   
+                    request.resource.data.get('siteRef', /databases/$(database)/documents/sites/$(site)) == /databases/$(database)/documents/sites/$(site)
+                    &&
+                    // if provided, check userRef field path existence
+                    get( request.resource.data.get('userRef', /databases/$(database)/documents/users/$(request.resource.id)) )['__name__'][3] == 'users'
+                    &&
+                    request.resource.data.get('role', '') is string
+                    &&                      
+                    request.resource.data.get('site_owner', false) is bool;
         }
         
-      }
-      
-      // **** SITE USERS ****
-      match /users/{user} {   //members   
-      
-      	// req: 'userRef'. opt: 'role', 'site_owner'
-      	function checkFields() {
-        	return   
-                  request.resource.data.get('siteRef', /databases/$(database)/documents/sites/$(site)) == /databases/$(database)/documents/sites/$(site)
-                  &&
-                  // if provided, check userRef field path existence
-                  get( request.resource.data.get('userRef', /databases/$(database)/documents/users/$(request.resource.id)) )['__name__'][3] == 'users'
-                  &&
-                  request.resource.data.get('role', '') is string
-                  &&                      
-                  request.resource.data.get('site_owner', false) is bool;
-        }
         
+        allow get: if user() != null; // isSiteOwner() || 
         
-      	allow get: if user() != null; // isSiteOwner() || 
-        
-        allow create: if 
-        							(
-        								isSiteOwner() 
-        								||
+        allow create: if
+                        // Check 'siteRef'
+                        request.resource.data.siteRef is path
+                        &&
+                        request.resource.data.siteRef == /databases/$(database)/documents/sites/$(site)
+                        &&
+
+                        // Check 'userRef'
+                        request.resource.data.userRef is path
+                        &&
+                        request.resource.data.userRef[3] == 'users'
+                        &&
+                        exists( request.resource.data.userRef )
+                        &&
+
+
                         (
-                          !exists( /databases/$(database)/documents/sites/$(site) )
-                          &&
-                          existsAfter( /databases/$(database)/documents/sites/$(site) )
-                        )
-                      )                          	                          
-        							&&
-                      verifyFields(["siteRef", "userRef"], ["role", "site_owner"] ) 
-                      &&
-                      checkFields();
-                      
-                      
-				allow update: if         							
-                      isSiteOwner()
-                      &&
-                      (
-                      	// prevent site owner resign
-                        resource.id != request.auth.uid || request.resource.data.diff(resource.data).unchangedKeys().hasAny(["site_owner"])
-                      )
-                      &&
-                      verifyFields([], ["siteRef", "userRef", "role", "site_owner"] )
-                      &&
-                      checkFields();                                           
-   
+                            isSiteOwner() 
+                            ||
+                            (
+                                // When creating a new site, must define self as site_owner
+                                !exists( /databases/$(database)/documents/sites/$(site) )
+                                &&
+                                existsAfter( /databases/$(database)/documents/sites/$(site) )
+                                &&
+                                request.resource.data.site_owner == true
+                                &&
+                                request.resource.id == request.auth.uid
+                            )
+                        )                          	                          
+                        &&
+                        verifyFields(["siteRef", "userRef"], ["role", "site_owner"] ) 
+                        &&
+                        checkFields();
+                        
+                        
+        allow update: if         							
+                isSiteOwner()
+                &&
+                (
+                // prevent site owner resign
+                resource.id != request.auth.uid || request.resource.data.diff(resource.data).unchangedKeys().hasAny(["site_owner"])
+                )
+                &&
+                verifyFields([], ["siteRef", "userRef", "role", "site_owner"] )
+                &&
+                checkFields();                                           
+
         
         allow delete: if
-                      (
+                        (
                         isSiteOwner()
                         &&
                         (                        
-                          // site owner can delete other user from his site  
-                          user != request.auth.uid
-                          ||
-                          // site owner can self delete only when deleting site, to avoid orphan/unowned sites
-                          !existsAfter(/databases/$(database)/documents/sites/$(site))
+                            // site owner can delete other user from his site  
+                            user != request.auth.uid
+                            ||
+                            // site owner can self delete only when deleting site, to avoid orphan/unowned sites
+                            !existsAfter(/databases/$(database)/documents/sites/$(site))
                         )
-                      )
-                      ||
-                      // Allow any user to opt out
-                      user == request.auth.uid; 
-                      // || or admin?
+                        )
+                        ||
+                        // Allow any user to opt out
+                        user == request.auth.uid; 
+                        // || or admin?
         
-      }
+        }
       
       
     }
@@ -144,18 +265,22 @@ service cloud.firestore {
 
     	//allow get: if exists( /databases/$(database)/documents/users/$(request.auth.uid) ); //request.auth.uid != null;
       allow get: if user == request.auth.uid;//get( /databases/$(database)/documents/users/$(request.auth.uid) );
+
       
     }
   
     match /{path=**}/users/{user} { // maybe /members/{member}
 
-      allow list: if resource.data.userRef == /databases/$(database)/documents/users/$(request.auth.uid);    
       //allow get: if request.auth.uid != null;
+      allow get: if user == request.auth.uid;
+      allow list: if resource.data.userRef == /databases/$(database)/documents/users/$(request.auth.uid);    
       
     }  
   
     match /{document=**} {
       allow read, write: if false;
     }
+
+
   }
 }

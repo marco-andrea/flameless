@@ -14,7 +14,7 @@
             <v-icon>mdi-menu</v-icon>
         </v-app-bar-nav-icon>
 
-        <v-toolbar-title v-text="title" />
+        <v-toolbar-title v-text="site ? site.title : 'Site List'" />
 
         <v-spacer />
 
@@ -25,13 +25,13 @@
         v-model="drawer"
         dark
         app
-        v-if="true"
+        v-if="$route.name != 'sites'"
     >
 
         <!-- Header -->
         <v-list-item
             :to="{name: 'sites'}"
-            exact
+            exact            
         >
 
             <v-list-item-icon>
@@ -44,12 +44,15 @@
 
         <v-divider></v-divider>
 
+        <v-list subheader dense>
         <!-- Menu Level 0 -->
         <template v-for="level0 in menu">
             <v-list-item
                 v-if="level0.type == 'item'"
                 :key="level0.id"
-                :to="level0.to" exact
+                :to="level0.to"
+                active-class="primary--text"
+                exact               
             >
                 <v-list-item-icon>
                     <v-icon v-text="level0.icon"></v-icon>
@@ -69,7 +72,7 @@
                 no-action
             >
 
-                <template v-slot:activator>
+                <template v-slot:activator>                    
                     <v-list-item-content>
                         <v-list-item-title v-text="level0.title"></v-list-item-title>
                     </v-list-item-content>
@@ -81,6 +84,8 @@
                         v-if="level1.type == 'item'"
                         :key="level1.id"
                         :to="level1.to"
+                        active-class="primary--text"
+                        exact                          
                     >
 
                         <v-list-item-content>
@@ -99,7 +104,7 @@
                         :value="true"
                         sub-group
                         no-action
-                        group="sites"
+                        
                     >
 
                         <template v-slot:activator>
@@ -113,6 +118,8 @@
                             v-for="level2 in level1.items"
                             :key="level2.id"
                             :to="level2.to"
+                            active-class="primary--text"
+                                                          
                         >
 
                             <v-list-item-content>
@@ -132,13 +139,12 @@
             </v-list-group>
 
         </template>
-
+        </v-list>
     </v-navigation-drawer>
 
     <v-main>
         <v-container>
             <nuxt />
-            <pre></pre>
         </v-container>
     </v-main>
 
@@ -153,32 +159,39 @@ export default {
             miniVariant: false,
             title: 'Flameless',
             content: [],
-            user: null,            
+            user: null,
+            site: null,            
         }
     },
     db: {
+        site() {  
+            const siteId = this.$route.params.siteId            
+            if (!siteId) return
+            return this.$firebase.firestore().doc(`sites/${siteId}`)
+        },        
         user() {  
-            const siteId = this.$store.state.route.params.siteId
+            const siteId = this.$route.params.siteId
             const userUID = this.$store.state.user.uid
-            if (!userUID) return
-            return firebase.firestore().collection(`sites/${siteId}/users`).doc(userUID)
+            if (!userUID || !siteId) return
+            //console.log(`sites/${siteId}/users`);
+            return this.$firebase.firestore().collection(`sites/${siteId}/users`).doc(userUID)
         },
         content() {            
-            const siteId = this.$store.state.route.params.siteId
+            const siteId = this.$route.params.siteId
             const {
                 role
             } = this.user || {}
-            if (!role) return
-            return firebase.firestore().collection(`sites/${siteId}/content`).where(`capabilities.${role}.read`, '==', true)
+            if (!role || !siteId) return
+
+            return this.$firebase.firestore().collection(`sites/${siteId}/content`).where(`roles.${role}.capabilities.read`, '==', true)
         }
     },
     watch: {
     },
     computed: {
         menu() {
-            console.log('changed menu', this.$store.state.route.params.siteId);
-            
-            const siteId = this.$store.state.route.params.siteId
+         
+            const siteId = this.$route.params.siteId
 
             return [{
                     type: 'item',
@@ -202,7 +215,12 @@ export default {
                             id: 'new',
                             title: 'Add new',
                             icon: 'mdi-plus',
-                            to: null
+                            to: {                        
+                                name: 'sites-siteId-content',
+                                params: {
+                                    siteId,
+                                }
+                            }
                         },
                         ...this.content.map(c => ({
                             type: 'group',
@@ -214,25 +232,91 @@ export default {
                                 title: c.title,
                                 icon: c.icon,
                                 to: {                        
-                                    name: 'sites-siteId-content-contentType',
+                                    name: 'sites-siteId-content-contentType-items',
                                     params: {
                                         siteId,
                                         contentType: c.id
                                     }
                                 }
-                            }]
+                            },{
+                                type: 'item',
+                                id: 'comments',
+                                title: 'Comments',
+                                icon: 'mdi-message',
+                                to: {                        
+                                    name: 'sites-siteId-content-contentType-comments',
+                                    params: {
+                                        siteId,
+                                        contentType: c.id
+                                    }
+                                }
+                            },{
+                                type: 'item',
+                                id: 'categories',
+                                title: 'Categories',
+                                icon: 'mdi-shape',
+                                to: {                        
+                                    name: 'sites-siteId-content-contentType-categories',
+                                    params: {
+                                        siteId,
+                                        contentType: c.id
+                                    }
+                                }
+                            }
+                            /*,{
+                                type: 'item',
+                                id: 'settings',
+                                title: 'Settings',
+                                icon: 'mdi-cog',
+                                to: {                        
+                                    name: 'sites-siteId-content-contentType-settings',
+                                    params: {
+                                        siteId,
+                                        contentType: c.id
+                                    }
+                                }
+                            }*/]
                         }))
                     ]
                 },
                 {
-                    type: 'item',
-                    id: 'users',
-                    title: 'Users',
-                    icon: 'mdi-account-multiple',
-                    to: {
-                        name: 'sites'
-                    }
-                },
+                    type: 'group',
+                    id: 'administration',
+                    title: 'Administration',
+                    icon: 'mdi-tune',
+                    items: [{
+                        type: 'item',
+                        id: 'general',
+                        title: 'General',
+                        icon: 'mdi-cog',
+                        to: {
+                            name: 'sites-siteId-administration',
+                            params: {
+                                siteId,
+                            }
+                        }
+                    },{
+                        type: 'item',
+                        id: 'users',
+                        title: 'Users',
+                        icon: 'mdi-account-multiple',
+                        to: {
+                            name: 'sites'
+                        }
+                    },{
+                        type: 'item',
+                        id: 'permissions',
+                        title: 'Permissions',
+                        icon: 'mdi-lock',
+                        to: {
+                            name: 'sites-siteId-administration-permissions',
+                            params: {
+                                siteId,
+                            }
+                        }
+                    }]
+                },                
+                
             ]
         }
     }
@@ -241,7 +325,7 @@ export default {
 
 <style lang="scss">
 .v-list-item--active .v-icon {
-    color: inherit;
+    //color: inherit;
 }
 
 .firebase-emulator-warning {
