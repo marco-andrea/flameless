@@ -47,6 +47,8 @@ exports.onCreateSite = functions.firestore.document('sites/{site}').onCreate(asy
         }
     };
 
+    const members = await snap.ref.collection('members').where('site_owner', '==', true).limit(1).get()
+
     // Load example content
     const batch = db.batch();
 
@@ -74,11 +76,13 @@ exports.onCreateSite = functions.firestore.document('sites/{site}').onCreate(asy
         await snap.ref.collection('content/posts/items').doc().set({
             createdAt: admin.firestore.FieldValue.serverTimestamp(),
             updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+            author: db.doc(`users/${members.docs[0].id}`),
             title: `Post ${index}`,
         });
         await snap.ref.collection('content/pages/items').doc().set({
             createdAt: admin.firestore.FieldValue.serverTimestamp(),
             updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+            author: db.doc(`users/${members.docs[0].id}`),
             title: `Page ${index}`,
         });
 
