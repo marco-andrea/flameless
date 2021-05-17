@@ -40,11 +40,11 @@ export default {
 input:-webkit-autofill,
 input:-webkit-autofill:hover,
 input:-webkit-autofill:focus {
-    /* 
-  -webkit-text-fill-color: white; 
-  -webkit-box-shadow: 0 0 0px 1000px map-get($material-theme, 'cards') inset;
-*/
-    transition: background-color 5000s ease-in-out 0s;
+    //-webkit-text-fill-color: white; 
+
+    box-shadow: 0 0 0px 1000px white inset;
+
+    transition: background-color 99999s ease-in-out 0s;
 
 }
 </style>

@@ -18,6 +18,7 @@
             </v-avatar>
         </v-btn>
         -->
+        <span>{{$store.state.user.email}}</span>
         <v-btn icon :to="{ name: 'login' }">
             
             <v-icon>mdi-exit-to-app</v-icon>

@@ -9,7 +9,7 @@
         prepend-inner-icon="mdi-email"
         type="text"
         :disabled="loading"
-        autofocus
+        
         required
       />
       <v-text-field v-model="form.password" :error-messages="errorMessages.password" :rules="[v => !!v || 'Password is required']" label="Password" name="password" prepend-inner-icon="mdi-lock" type="password" :disabled="loading" required />
@@ -24,8 +24,10 @@
         depressed
         :loading="loading"
         type="submit"
+        
       >Login</v-btn>
     </v-card-actions>
+    <pre>{{form}}</pre>
 
   </v-form>
 </template>
@@ -38,8 +40,8 @@ export default {
       loading: false,
       valid: null,
       form: {
-        email: null,
-        password: null,
+        email: '',
+        password: '',
       },
       errorMessages: {
         email: [],

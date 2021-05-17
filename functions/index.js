@@ -90,7 +90,7 @@ exports.onCreateSite = functions.firestore.document('sites/{site}').onCreate(asy
 
 
 
-exports.onDeleteDocument = functions.firestore.document('{document=**}').onDelete(async ({
+exports.onDeleteDocument = functions.firestore.document('{collection}/{document=**}').onDelete(async ({
     ref: documentRef
 }, context) => {
 

@@ -88,6 +88,16 @@
                         </v-form>
                     </v-card-text>
 
+                    <v-card-text>
+                        <v-container class="px-0">
+                            <v-row>
+                                <v-col cols=12>
+                                    <v-alert type="error" :value="!!dialogError">{{dialogError}}</v-alert>
+                                </v-col>
+                            </v-row>
+                        </v-container>
+                    </v-card-text>
+
                     <v-card-actions v-if="!$vuetify.breakpoint.mobile">
                         <v-spacer></v-spacer>
                         <v-btn color="primary" text @click="close">Cancel</v-btn>
@@ -265,7 +275,7 @@ export default {
             endBeforeDoc: null,
             hasAfter: [],
             hasBefore: [],
-
+            dialogError: false,
             members: [],
         }
     },
@@ -522,12 +532,13 @@ export default {
             // Clear dialog form
             await this.$nextTick()
             this.editedItem = Object.assign({}, this.defaultItem)
-
+            this.dialogError = false
         },
 
         async save() {
 
             this.editItemLoading = true
+            this.dialogError = false
 
             const {
                 title,
@@ -579,7 +590,7 @@ export default {
                 name,
                 message
             }) {
-                console.error(message);
+                this.dialogError = message                
             }
 
             this.editItemLoading = false
@@ -589,6 +600,7 @@ export default {
         async remove() {
 
             this.editItemLoading = true
+            this.dialogError = false
 
             const {
                 params: {
@@ -613,7 +625,7 @@ export default {
                 name,
                 message
             }) {
-                console.error(message);
+                this.dialogError = message                
             }
 
             this.editItemLoading = false
