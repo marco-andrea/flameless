@@ -78,17 +78,18 @@ exports.onCreateSite = functions.firestore.document('sites/{site}').onCreate(asy
             updatedAt: admin.firestore.FieldValue.serverTimestamp(),
             author: db.doc(`users/${members.docs[0].id}`),
             title: `Post ${index}`,
+            content: '',
         });
+
         await snap.ref.collection('content/pages/items').doc().set({
             createdAt: admin.firestore.FieldValue.serverTimestamp(),
             updatedAt: admin.firestore.FieldValue.serverTimestamp(),
             author: db.doc(`users/${members.docs[0].id}`),
             title: `Page ${index}`,
+            content: '',            
         });
 
     }
-
-    
 
 })
 
