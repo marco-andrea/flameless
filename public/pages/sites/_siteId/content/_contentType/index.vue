@@ -143,7 +143,7 @@
             hide-default-footer
             disable-pagination
             disable-filtering
-            multi-sort
+            
         >
 
             <template v-slot:top>
@@ -305,8 +305,10 @@ export default {
                 queryStr += `.orderBy('${field}', '${sortDesc[i] ? 'desc' : 'asc'}')`
             }
 
-            query = query.orderBy('createdAt', 'desc')
-            queryStr += `.orderBy('createdAt', 'desc')`
+            if (sortBy.length == 0) {
+                query = query.orderBy('createdAt', 'desc')
+                queryStr += `.orderBy('createdAt', 'desc')`                
+            }
 
             //console.log(queryStr)
 

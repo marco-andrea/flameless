@@ -26,8 +26,7 @@
         type="submit"
         
       >Login</v-btn>
-    </v-card-actions>
-    <pre>{{form}}</pre>
+    </v-card-actions>  
 
   </v-form>
 </template>
