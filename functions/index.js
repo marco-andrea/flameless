@@ -5,141 +5,141 @@ admin.initializeApp();
 
 const db = admin.firestore();
 
-// // Create and Deploy Your First Cloud Functions
-// // https://firebase.google.com/docs/functions/write-firebase-functions
-//
-exports.helloWorld = functions.https.onRequest((request, response) => {
-  functions.logger.info('Hello logs!', {structuredData: true});
-  response.send('Hello from Firebase!');
+exports.onCreateSiteUser = functions.auth.user().onCreate((user) => {
+
+    return db.collection('users').doc(user.uid).set({}, { merge: true });
+
 });
 
-exports.sendWelcomeEmail = functions.auth.user().onCreate((user) => {
-  return db.collection('users').doc(user.uid).set({}, {merge: true});
-});
 
 exports.onCreateSite = functions.firestore.document('sites/{site}').onCreate(async (snap, context) => {
 
-  /*
-  const defaultSchema = {
-    capabilities: {
-      admin: {
-        delete: true,
-        delete_others: true,
-        edit: true,
-        edit_others: true,
-        manage_categories: true,
-        read: true,
-      },
-      editor: {
-        delete: false,
-        delete_others: false,
-        edit: true,
-        edit_others: true,
-        manage_categories: true,
-        read: true,
-      },
-      subscriber: {
-        read: true,
-      },
+    const defaultSchema = {
+        roles: {
+            admin: {
+                capabilities: {
+                    delete: true,
+                    delete_others: true,
+                    edit: true,
+                    edit_others: true,
+                    manage_categories: true,
+                    read: true,
+                },
+                order: 0,
+            },
+            editor: {
+                capabilities: {
+                    delete: true,
+                    delete_others: true,
+                    edit: true,
+                    edit_others: true,
+                    manage_categories: true,
+                    read: true,
+                },
+                order: 1,
+            },
+            subscriber: {
+                capabilities: {
+                    read: true,
+                },
+                order: 2,
+            },
+        }
+    };
+
+    // Load example content
+    const batch = db.batch();
+
+    batch.set(snap.ref.collection('content').doc('posts'), {
+        title: "Post",
+        icon: 'mdi-pencil',
+        ...defaultSchema
+    });
+    batch.set(snap.ref.collection('content').doc('pages'), {
+        title: "Page",
+        icon: 'mdi-view-dashboard',
+        ...defaultSchema
+    });
+    batch.set(snap.ref.collection('content/posts/categories').doc(), {
+        title: "Post Category title"
+    });
+    batch.set(snap.ref.collection('content/pages/categories').doc(), {
+        title: "Page Category title"
+    });
+
+    await batch.commit();
+
+    for (let index = 0; index < 20; index++) {
+                
+        await snap.ref.collection('content/posts/items').doc().set({
+            createdAt: admin.firestore.FieldValue.serverTimestamp(),
+            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+            title: `Post ${index}`,
+        });
+        await snap.ref.collection('content/pages/items').doc().set({
+            createdAt: admin.firestore.FieldValue.serverTimestamp(),
+            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+            title: `Page ${index}`,
+        });
+
     }
-  };
-  */
-  const defaultSchema = {
-    roles: {      
-      admin: {
-        capabilities: {
-          delete: true,
-          delete_others: true,
-          edit: true,
-          edit_others: true,
-          manage_categories: true,
-          read: true,
-        },
-        order: 0,
-      },
-      editor: {
-        capabilities: {
-          delete: true,
-          delete_others: true,
-          edit: true,
-          edit_others: true,
-          manage_categories: true,
-          read: true,
-        },
-        order: 1,
-      },
-      subscriber: {
-        capabilities: {
-          read: true,
-        },
-        order: 2,        
-      },
-    }
-  };
 
-
-  // Load some content
-  const batch = db.batch();
-
-  batch.set(snap.ref.collection('content').doc('posts'), { title: "Post", icon: 'mdi-pencil', ...defaultSchema});
-  batch.set(snap.ref.collection('content').doc('pages'), { title: "Page", icon: 'mdi-view-dashboard', ...defaultSchema});  
-  batch.set(snap.ref.collection('content/posts/categories').doc(), { title: "Post Category title" });
-  batch.set(snap.ref.collection('content/pages/categories').doc(), { title: "Page Category title" });  
-  batch.set(snap.ref.collection('content/posts/items').doc(), { title: "Post title" });
-  batch.set(snap.ref.collection('content/pages/items').doc(), { title: "Page title" });
-  
-  await batch.commit();
+    
 
 })
 
-exports.deleteCollection = functions.firestore.document('{document=**}').onDelete(async ({ref: documentRef}, context) => {
 
-  const collections = await documentRef.listCollections();
 
-  if (!collections.length) {
-    return;
-  }
+exports.onDeleteDocument = functions.firestore.document('{document=**}').onDelete(async ({
+    ref: documentRef
+}, context) => {
 
-  // https://cloud.google.com/firestore/docs/manage-data/delete-data#collections
+    const collections = await documentRef.listCollections();
 
-  async function deleteCollection(collectionRef, batchSize) {   
-    console.log(`deleteCollection ${collectionRef.path}`); 
-    const query = collectionRef.orderBy('__name__').limit(batchSize);
-  
-    return new Promise((resolve, reject) => {
-      deleteQueryBatch(query, resolve).catch(reject);
-    });
-
-  }
-  
-  async function deleteQueryBatch(query, resolve) {
-    console.log("deleteQueryBatch");
-    const snapshot = await query.get();
-  
-    const batchSize = snapshot.size;
-    if (batchSize === 0) {
-      // When there are no documents left, we are done
-      resolve();
-      return;
+    if (!collections.length) {
+        return;
     }
-  
-    // Delete documents in a batch
-    const batch = db.batch();
-    snapshot.docs.forEach((doc) => {      
-      console.log(`Deleting document: ${doc.ref.path}`);
-      batch.delete(doc.ref);
-    });
-    await batch.commit();
-  
-    // Recurse on the next process tick, to avoid
-    // exploding the stack.
-    process.nextTick(() => {
-      deleteQueryBatch(query, resolve);
-    });
 
-  }
+    // https://cloud.google.com/firestore/docs/manage-data/delete-data#collections
 
-  return Promise.all( collections.map((collection) => deleteCollection(collection, 500)) );
+    async function deleteCollection(collectionRef, batchSize) {
+        console.log(`deleteCollection ${collectionRef.path}`);
+        const query = collectionRef.orderBy('__name__').limit(batchSize);
+
+        return new Promise((resolve, reject) => {
+            deleteQueryBatch(query, resolve).catch(reject);
+        });
+
+    }
+
+    async function deleteQueryBatch(query, resolve) {
+        console.log("deleteQueryBatch");
+        const snapshot = await query.get();
+
+        const batchSize = snapshot.size;
+        if (batchSize === 0) {
+            // When there are no documents left, we are done
+            resolve();
+            return;
+        }
+
+        // Delete documents in a batch
+        const batch = db.batch();
+        snapshot.docs.forEach((doc) => {
+            console.log(`Deleting document: ${doc.ref.path}`);
+            batch.delete(doc.ref);
+        });
+        await batch.commit();
+
+        // Recurse on the next process tick, to avoid
+        // exploding the stack.
+        process.nextTick(() => {
+            deleteQueryBatch(query, resolve);
+        });
+
+    }
+
+    return Promise.all(collections.map((collection) => deleteCollection(collection, 500)));
 
 });
 
@@ -159,7 +159,7 @@ exports.deleteCollection = functions.firestore.document('{document=**}').onDelet
 
 
 
-  /*
+/*
 
 
   
@@ -238,7 +238,7 @@ exports.processPending = functions.firestore.document('pending/{document}').onWr
 
 
 
-  /*
+/*
 
 
   const query = collectionRef.orderBy('__name__').limit(batchSize);

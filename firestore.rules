@@ -10,11 +10,11 @@ service cloud.firestore {
   	match /sites/{site} {
 
         function userPath() {
-            return /databases/$(database)/documents/sites/$(site)/users/$(request.auth.uid);
+            return /databases/$(database)/documents/sites/$(site)/members/$(request.auth.uid);
         }      
 
         function user() {
-            return get( /databases/$(database)/documents/sites/$(site)/users/$(request.auth.uid) );
+            return get( userPath() );
         }
         
         function isSiteOwner() {
@@ -24,10 +24,10 @@ service cloud.firestore {
         // if user belongs to site
         allow read: if exists( userPath() ) || existsAfter( userPath() );
         
-        allow create:   if
-                        verifyFields([], ["title"])
-                        &&
-                        getAfter( /databases/$(database)/documents/sites/$(site)/users/$(request.auth.uid) ).data.site_owner == true;
+        allow create: if
+            verifyFields([], ["title"])
+            &&
+            getAfter( userPath() ).data.site_owner == true;
 
         allow update: if isSiteOwner(); // and schema
 
@@ -45,7 +45,7 @@ service cloud.firestore {
                 return get( /databases/$(database)/documents/sites/$(site)/content/$(content) );
             }            
 
-            allow read: if isSiteOwner() || resource.data.roles[ user().data.role ].capabilities.read;
+            allow read: if isSiteOwner() || resource.data.roles[ user().data.role ].capabilities.read || debug(resource) == true;
 
             allow write: if isSiteOwner(); // posts, pages, etc.   
             
@@ -61,90 +61,90 @@ service cloud.firestore {
                 allow read: if ( isSiteOwner() || content().data.roles[ user().data.role ].capabilities.read);
 
                 allow create:   if
-                                // Check required fields 'createdAt' and 'author'
-                                request.resource.data.keys().hasAll(["createdAt", "updatedAt","author"])
-                                &&
-                                
-                                // Validate 'createdAt'
-                                request.resource.data.createdAt == request.time
-                                &&
-                                // Validate 'updatedAt'
-                                request.resource.data.updatedAt == request.time
-                                &&                                
+                    // Check required fields 'createdAt' and 'author'
+                    request.resource.data.keys().hasAll(["createdAt", "updatedAt","author"])
+                    &&
+                    
+                    // Validate 'createdAt'
+                    request.resource.data.createdAt == request.time
+                    &&
+                    // Validate 'updatedAt'
+                    request.resource.data.updatedAt == request.time
+                    &&                                
 
-                                // Validate 'author', check if user exits and is member of this site
-                                request.resource.data.author is path 
-                                &&
-                                request.resource.data.author[3] == 'users'
-                                &&
-                                // 
-                                exists( request.resource.data.author ) && exists( /databases/$(database)/documents/sites/$(site)/users/$(request.resource.data.author[4]) )
+                    // Validate 'author', check if user exits and is member of this site
+                    request.resource.data.author is path 
+                    &&
+                    request.resource.data.author[3] == 'users'
+                    &&
+                    // 
+                    exists( request.resource.data.author ) && exists( /databases/$(database)/documents/sites/$(site)/members/$(request.resource.data.author[4]) )
 
-                                &&
-                                (
-                                    // Allow create if user is siteOwner
-                                    isSiteOwner()
-                                    ||
-                                    // Or if has the capabilities
-                                    content().data.roles[ user().data.role ].capabilities.edit_others
-                                    ||
-                                    // Or if owns this post
-                                    (content().data.roles[ user().data.role ].capabilities.edit && request.resource.data.author == /databases/$(database)/documents/users/$(request.auth.uid) )
-                                ); 
+                    &&
+                    (
+                        // Allow create if user is siteOwner
+                        isSiteOwner()
+                        ||
+                        // Or if has the capabilities
+                        content().data.roles[ user().data.role ].capabilities.edit_others
+                        ||
+                        // Or if owns this post
+                        (content().data.roles[ user().data.role ].capabilities.edit && request.resource.data.author == /databases/$(database)/documents/users/$(request.auth.uid) )
+                    ); 
 
 
                 allow update:   if
-                                // Prevent update 'createdAt' field
-                                request.resource.data.diff(resource.data).unchangedKeys().hasAny(["createdAt"])
-                                &&
+                    // Prevent update 'createdAt' field
+                    request.resource.data.diff(resource.data).unchangedKeys().hasAny(["createdAt"])
+                    &&
 
-                                // Check required fields 'updatedAt'
-                                request.resource.data.keys().hasAll(["updatedAt"])
-                                &&
-                                
-                                // Validate 'createdAt'
-                                request.resource.data.updatedAt == request.time
-                                &&
+                    // Check required fields 'updatedAt'
+                    request.resource.data.keys().hasAll(["updatedAt"])
+                    &&
+                    
+                    // Validate 'createdAt'
+                    request.resource.data.updatedAt == request.time
+                    &&
 
-                                // Validate 'author', check if user exits and is member of this site
-                                request.resource.data.author is path 
-                                &&
-                                request.resource.data.author[3] == 'users'
-                                &&                             
-                                exists( request.resource.data.author ) && exists( /databases/$(database)/documents/sites/$(site)/users/$(request.resource.data.author[4]) )
+                    // Validate 'author', check if user exits and is member of this site
+                    request.resource.data.author is path 
+                    &&
+                    request.resource.data.author[3] == 'users'
+                    &&                             
+                    exists( request.resource.data.author ) && exists( /databases/$(database)/documents/sites/$(site)/members/$(request.resource.data.author[4]) )
 
-                                &&
-                                (
-                                    // Allow update if user is siteOwner
-                                    isSiteOwner()
-                                    ||
-                                    // Or if has the capabilities to edit post from others
-                                    content().data.roles[ user().data.role ].capabilities.edit_others
-                                    ||
-                                    // Or editing owned posts
-                                    (
-                                        content().data.roles[ user().data.role ].capabilities.edit
-                                        &&
-                                        request.resource.data.diff(resource.data).unchangedKeys().hasAny(["author"])
-                                        &&
-                                        resource.data.author == /databases/$(database)/documents/users/$(request.auth.uid)
-                                    )
-                                );
+                    &&
+                    (
+                        // Allow update if user is siteOwner
+                        isSiteOwner()
+                        ||
+                        // Or if has the capabilities to edit post from others
+                        content().data.roles[ user().data.role ].capabilities.edit_others
+                        ||
+                        // Or editing owned posts
+                        (
+                            content().data.roles[ user().data.role ].capabilities.edit
+                            &&
+                            request.resource.data.diff(resource.data).unchangedKeys().hasAny(["author"])
+                            &&
+                            resource.data.author == /databases/$(database)/documents/users/$(request.auth.uid)
+                        )
+                    );
                                     
 
                 allow delete: if
-                                // Allow update if user is siteOwner
-                                isSiteOwner()
-                                ||
-                                // Or if has the capabilities to edit post from others
-                                content().data.roles[ user().data.role ].capabilities.delete_others
-                                ||
-                                // Or deleting own post
-                                (
-                                    content().data.roles[ user().data.role ].capabilities.delete
-                                    &&
-                                    resource.data.author == /databases/$(database)/documents/users/$(request.auth.uid)
-                                );
+                    // Allow update if user is siteOwner
+                    isSiteOwner()
+                    ||
+                    // Or if has the capabilities to edit post from others
+                    content().data.roles[ user().data.role ].capabilities.delete_others
+                    ||
+                    // Or deleting own post
+                    (
+                        content().data.roles[ user().data.role ].capabilities.delete
+                        &&
+                        resource.data.author == /databases/$(database)/documents/users/$(request.auth.uid)
+                    );
 
                 //  match /comments/{comment} {
                 //  }              
@@ -164,93 +164,87 @@ service cloud.firestore {
         // *** END CONTENT TYPE ***
         
 
-
         // ****************** //
         // *** SITE USERS *** //
         // ****************** //
-        match /users/{user} {   // or members   
+        match /members/{user} {   // or members   
         
-        // req: 'siteRef', 'userRef'. opt: 'role', 'site_owner'
-        function checkFields() {
-            return   
-                    request.resource.data.get('siteRef', /databases/$(database)/documents/sites/$(site)) == /databases/$(database)/documents/sites/$(site)
-                    &&
-                    // if provided, check userRef field path existence
-                    get( request.resource.data.get('userRef', /databases/$(database)/documents/users/$(request.resource.id)) )['__name__'][3] == 'users'
-                    &&
-                    request.resource.data.get('role', '') is string
-                    &&                      
-                    request.resource.data.get('site_owner', false) is bool;
-        }
+        // req: 'siteRef', 'userRef'. opt: 'role', 'site_owner'      
         
-        
-        allow get: if user() != null; // isSiteOwner() || 
+        allow get, list: if user() != null; // isSiteOwner() || 
         
         allow create: if
-                        // Check 'siteRef'
-                        request.resource.data.siteRef is path
-                        &&
-                        request.resource.data.siteRef == /databases/$(database)/documents/sites/$(site)
-                        &&
+            // Check 'siteRef'
+            request.resource.data.siteRef is path
+            &&
+            request.resource.data.siteRef == /databases/$(database)/documents/sites/$(site)
+            &&
 
-                        // Check 'userRef'
-                        request.resource.data.userRef is path
-                        &&
-                        request.resource.data.userRef[3] == 'users'
-                        &&
-                        exists( request.resource.data.userRef )
-                        &&
+            // Check 'userRef'
+            request.resource.data.userRef is path
+            &&
+            //request.resource.data.userRef[3] == 'users' //FIX  /databases/$(database)/documents/users/$(user)
+            request.resource.data.userRef == /databases/$(database)/documents/users/$(user)
+            &&
+            exists( request.resource.data.userRef )
+            &&
 
+            request.resource.data.get('role', '') is string
+            &&                      
+            request.resource.data.get('site_owner', false) is bool
+            &&
 
-                        (
-                            isSiteOwner() 
-                            ||
-                            (
-                                // When creating a new site, must define self as site_owner
-                                !exists( /databases/$(database)/documents/sites/$(site) )
-                                &&
-                                existsAfter( /databases/$(database)/documents/sites/$(site) )
-                                &&
-                                request.resource.data.site_owner == true
-                                &&
-                                request.resource.id == request.auth.uid
-                            )
-                        )                          	                          
-                        &&
-                        verifyFields(["siteRef", "userRef"], ["role", "site_owner"] ) 
-                        &&
-                        checkFields();
-                        
-                        
-        allow update: if         							
-                isSiteOwner()
-                &&
+            (
+                isSiteOwner() 
+                ||
                 (
-                // prevent site owner resign
-                resource.id != request.auth.uid || request.resource.data.diff(resource.data).unchangedKeys().hasAny(["site_owner"])
+                    // When creating a new site, must define self as site_owner
+                    !exists( /databases/$(database)/documents/sites/$(site) )
+                    &&
+                    existsAfter( /databases/$(database)/documents/sites/$(site) )
+                    &&
+                    request.resource.data.site_owner == true
+                    &&
+                    request.auth.uid == user
                 )
-                &&
-                verifyFields([], ["siteRef", "userRef", "role", "site_owner"] )
-                &&
-                checkFields();                                           
+            )                          	                          
+            &&
+            verifyFields(["siteRef", "userRef"], ["role", "site_owner"] );
+                        
+                        
+        allow update: if
+            request.resource.data.diff(resource.data).unchangedKeys().hasAll(["siteRef", "userRef"])         							
+            &&
+            request.resource.data.get('role', '') is string
+            &&                      
+            request.resource.data.get('site_owner', false) is bool
+            &&            
+            isSiteOwner()
+            &&
+            (
+            // prevent site owner resign
+            request.auth.uid != user || request.resource.data.diff(resource.data).unchangedKeys().hasAny(["site_owner"])
+            )
+            &&
+            verifyFields([], ["siteRef", "userRef", "role", "site_owner"] );                                           
 
         
         allow delete: if
-                        (
-                        isSiteOwner()
-                        &&
-                        (                        
-                            // site owner can delete other user from his site  
-                            user != request.auth.uid
-                            ||
-                            // site owner can self delete only when deleting site, to avoid orphan/unowned sites
-                            !existsAfter(/databases/$(database)/documents/sites/$(site))
-                        )
-                        )
-                        ||
-                        // Allow any user to opt out
-                        user == request.auth.uid; 
-                        // || or admin?
+            (
+            isSiteOwner()
+            &&
+            (                        
+                // site owner can delete other user from his site  
+                user != request.auth.uid
+                ||
+                // site owner can self delete only when deleting site, to avoid orphan/unowned sites
+                !existsAfter(/databases/$(database)/documents/sites/$(site))
+            )
+            )
+            ||
+            // Allow any user to opt out
+            (!isSiteOwner() && user == request.auth.uid); 
+            // || or admin?
         
         }
       
@@ -258,29 +252,56 @@ service cloud.firestore {
     }
     // **** END SITE ****
     
-    // **** ALL USERS ****
-    match /users/{user} {
-    
-      allow create, update: if user == request.auth.uid && verifyFields([], ['email', 'displayName'] )
 
-    	//allow get: if exists( /databases/$(database)/documents/users/$(request.auth.uid) ); //request.auth.uid != null;
-      allow get: if user == request.auth.uid;//get( /databases/$(database)/documents/users/$(request.auth.uid) );
+    // *******************
+    // **** MEMBERS ******
+    // *******************
+    match /{path=**}/members/{user} { // maybe /members/{member}
 
-      
-    }
-  
-    match /{path=**}/users/{user} { // maybe /members/{member}
-
-      //allow get: if request.auth.uid != null;
       allow get: if user == request.auth.uid;
       allow list: if resource.data.userRef == /databases/$(database)/documents/users/$(request.auth.uid);    
       
     }  
   
+
+    // *******************
+    // **** ALL USERS ****
+    // *******************
+    match /users/{user} {
+    
+        allow create, update: if
+            // Allow self write only, and fields must be the same as request.auth.token(email|name) content
+            request.auth.uid == user
+            &&
+            request.resource.data.keys().hasOnly(['email', 'displayName'])
+            &&
+            request.resource.data.keys().hasAll(['email', 'displayName'])
+            &&
+            request.resource.data.email == request.auth.token.email
+            &&
+            request.resource.data.displayName == request.auth.token.name;
+    
+        allow get: if
+            // Any Logged in user can get (like facebook) / But, must know the user id
+            request.auth.uid != null;
+
+        allow list: if
+            // Allow only this type of query, to find user by their email: .where('email', '==', 'email@example').limit(1)
+            resource.data.keys().hasAll(['email'])
+            &&
+            resource.data.email is string // Allow '=='. Block '>=', '<=', etc.
+            &&
+            request.query.orderBy.keys().hasOnly(['__name__'])            
+            &&
+            request.query.limit == 1;      
+    }
+  
+
+    // Else block all documents.
     match /{document=**} {
       allow read, write: if false;
     }
 
-
   }
+
 }

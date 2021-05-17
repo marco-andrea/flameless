@@ -1,23 +1,28 @@
 <template>
 <v-app>
 
-    <v-app-bar
-        elevate-on-scroll
-        short
-        app
-    >
+    <v-app-bar elevate-on-scroll short app>
 
-        <v-app-bar-nav-icon
-            v-if="$vuetify.breakpoint.mobile"
-            @click.stop="drawer = !drawer"
-        >
+        <v-app-bar-nav-icon v-if="$vuetify.breakpoint.mobile" @click.stop="drawer = !drawer">
             <v-icon>mdi-menu</v-icon>
         </v-app-bar-nav-icon>
 
         <v-toolbar-title v-text="site ? site.title : 'Site List'" />
 
-        <v-spacer />
+        <v-spacer></v-spacer>
 
+        <!--
+        <v-btn icon :to="'/'">
+            <v-avatar color="grey lighten-2" size="35">
+                <v-icon>mdi-account</v-icon>
+            </v-avatar>
+        </v-btn>
+        -->
+        <v-btn icon :to="{ name: 'login' }">
+            
+            <v-icon>mdi-exit-to-app</v-icon>
+            
+        </v-btn>        
     </v-app-bar>
 
     <v-navigation-drawer
@@ -29,10 +34,7 @@
     >
 
         <!-- Header -->
-        <v-list-item
-            :to="{name: 'sites'}"
-            exact            
-        >
+        <v-list-item :to="{name: 'sites'}" exact>
 
             <v-list-item-icon>
                 <v-icon color="primary">mdi-fire</v-icon>
@@ -45,101 +47,103 @@
         <v-divider></v-divider>
 
         <v-list subheader dense>
-        <!-- Menu Level 0 -->
-        <template v-for="level0 in menu">
-            <v-list-item
-                v-if="level0.type == 'item'"
-                :key="level0.id"
-                :to="level0.to"
-                active-class="primary--text"
-                exact               
-            >
-                <v-list-item-icon>
-                    <v-icon v-text="level0.icon"></v-icon>
-                </v-list-item-icon>
+            <!-- Menu Level 0 -->
+            <template v-for="level0 in menu">
+                <v-list-item
+                    v-if="level0.type == 'item'"
+                    :key="level0.id"
+                    :to="level0.to"
+                    active-class="primary--text"
+                    exact
+                >
+                    <v-list-item-icon>
+                        <v-icon v-text="level0.icon"></v-icon>
+                    </v-list-item-icon>
 
-                <v-list-item-content>
-                    <v-list-item-title v-text="level0.title"></v-list-item-title>
-                </v-list-item-content>
-
-            </v-list-item>
-
-            <v-list-group
-                v-if="level0.type == 'group'"
-                :key="level0.id"
-                :value="true"
-                :prepend-icon="level0.icon"
-                no-action
-            >
-
-                <template v-slot:activator>                    
                     <v-list-item-content>
                         <v-list-item-title v-text="level0.title"></v-list-item-title>
                     </v-list-item-content>
-                </template>
 
-                <!-- Menu Level 1 -->
-                <template v-for="level1 in level0.items">
-                    <v-list-item
-                        v-if="level1.type == 'item'"
-                        :key="level1.id"
-                        :to="level1.to"
-                        active-class="primary--text"
-                        exact                          
-                    >
+                </v-list-item>
 
+                <v-list-group
+                    v-if="level0.type == 'group'"
+                    :key="level0.id"
+                    :value="true"
+                    :prepend-icon="level0.icon"
+                    no-action
+                >
+
+                    <template v-slot:activator>
                         <v-list-item-content>
-                            <v-list-item-title v-text="level1.title"></v-list-item-title>
+                            <v-list-item-title v-text="level0.title"></v-list-item-title>
                         </v-list-item-content>
+                    </template>
 
-                        <v-list-item-icon>
-                            <v-icon v-text="level1.icon"></v-icon>
-                        </v-list-item-icon>
-
-                    </v-list-item>
-
-                    <v-list-group
-                        v-if="level1.type == 'group'"
-                        :key="level1.id"
-                        :value="true"
-                        sub-group
-                        no-action
-                        
-                    >
-
-                        <template v-slot:activator>
-                            <v-list-item-content>
-                                <v-list-item-title v-text="level1.title"></v-list-item-title>
-                            </v-list-item-content>
-                        </template>
-
-                        <!-- Menu Level 2 -->
+                    <!-- Menu Level 1 -->
+                    <template v-for="level1 in level0.items">
                         <v-list-item
-                            v-for="level2 in level1.items"
-                            :key="level2.id"
-                            :to="level2.to"
+                            v-if="level1.type == 'item'"
+                            :key="level1.id"
+                            :to="level1.to"
                             active-class="primary--text"
-                                                          
+                            :exact="$route.name != level1.to.name"
                         >
 
                             <v-list-item-content>
-                                <v-list-item-title v-text="level2.title"></v-list-item-title>
+                                <v-list-item-title v-text="level1.title"></v-list-item-title>
                             </v-list-item-content>
 
                             <v-list-item-icon>
-                                <v-icon v-text="level2.icon"></v-icon>
+                                <v-icon v-text="level1.icon"></v-icon>
                             </v-list-item-icon>
 
                         </v-list-item>
 
-                    </v-list-group>
+                        <v-list-group
+                            v-if="level1.type == 'group'"
+                            :key="level1.id"
+                            :value="true"
+                            sub-group
+                            no-action
+                        >
 
-                </template>
+                            <template v-slot:activator>
+                                <v-list-item-content>
+                                    <v-list-item-title v-text="level1.title"></v-list-item-title>
+                                </v-list-item-content>
+                            </template>
 
-            </v-list-group>
+                            <!-- Menu Level 2 -->
+                            <v-list-item
+                                v-for="level2 in level1.items"
+                                :key="level2.id"
+                                :to="level2.to"
+                                active-class="primary--text"
+                                :exact="$route.name != level2.to.name"
+                            >
 
-        </template>
+                                <v-list-item-content>
+                                    <v-list-item-title v-text="level2.title"></v-list-item-title>
+                                </v-list-item-content>
+
+                                <v-list-item-icon>
+                                    <v-icon v-text="level2.icon"></v-icon>
+                                </v-list-item-icon>
+
+                            </v-list-item>
+
+                        </v-list-group>
+
+                    </template>
+
+                </v-list-group>
+
+            </template>
         </v-list>
+        <!--<pre class="white--text" style="
+    white-space: break-spaces;
+">{{ { path: $route.path, name: $route.name } }}</pre>-->
     </v-navigation-drawer>
 
     <v-main>
@@ -160,23 +164,23 @@ export default {
             title: 'Flameless',
             content: [],
             user: null,
-            site: null,            
+            site: null,
         }
     },
     db: {
-        site() {  
-            const siteId = this.$route.params.siteId            
+        site() {
+            const siteId = this.$route.params.siteId
             if (!siteId) return
             return this.$firebase.firestore().doc(`sites/${siteId}`)
-        },        
-        user() {  
+        },
+        user() {
             const siteId = this.$route.params.siteId
             const userUID = this.$store.state.user.uid
             if (!userUID || !siteId) return
-            //console.log(`sites/${siteId}/users`);
-            return this.$firebase.firestore().collection(`sites/${siteId}/users`).doc(userUID)
+            //console.log(`sites/${siteId}/members`);
+            return this.$firebase.firestore().doc(`sites/${siteId}/members/${userUID}`)
         },
-        content() {            
+        content() {
             const siteId = this.$route.params.siteId
             const {
                 role
@@ -186,96 +190,103 @@ export default {
             return this.$firebase.firestore().collection(`sites/${siteId}/content`).where(`roles.${role}.capabilities.read`, '==', true)
         }
     },
-    watch: {
-    },
+    watch: {},
     computed: {
         menu() {
-         
+
             const siteId = this.$route.params.siteId
 
-            return [{
+            return [
+                /*
+                {
                     type: 'item',
                     id: 'welcome',
                     title: 'Welcome',
                     icon: 'mdi-human-greeting',
-                    to: {                        
+                    to: {
                         name: 'sites-siteId',
                         params: {
                             siteId
                         }
                     }
                 },
+                */
                 {
                     type: 'group',
                     id: 'content',
                     title: 'Content',
                     icon: 'mdi-folder',
-                    items: [{
+                    items: [
+                        /*
+                        {
                             type: 'item',
                             id: 'new',
                             title: 'Add new',
                             icon: 'mdi-plus',
-                            to: {                        
+                            to: {
                                 name: 'sites-siteId-content',
                                 params: {
                                     siteId,
                                 }
-                            }
+                            },
                         },
+                        */
                         ...this.content.map(c => ({
                             type: 'group',
                             id: c.id,
                             title: c.title,
                             items: [{
-                                type: 'item',
-                                id: 'dashboard',
-                                title: c.title,
-                                icon: c.icon,
-                                to: {                        
-                                    name: 'sites-siteId-content-contentType-items',
-                                    params: {
-                                        siteId,
-                                        contentType: c.id
+                                    type: 'item',
+                                    id: 'dashboard',
+                                    title: c.title,
+                                    icon: c.icon,
+                                    to: {
+                                        name: 'sites-siteId-content-contentType',
+                                        params: {
+                                            siteId,
+                                            contentType: c.id
+                                        }
                                     }
                                 }
-                            },{
-                                type: 'item',
-                                id: 'comments',
-                                title: 'Comments',
-                                icon: 'mdi-message',
-                                to: {                        
-                                    name: 'sites-siteId-content-contentType-comments',
-                                    params: {
-                                        siteId,
-                                        contentType: c.id
-                                    }
-                                }
-                            },{
-                                type: 'item',
-                                id: 'categories',
-                                title: 'Categories',
-                                icon: 'mdi-shape',
-                                to: {                        
-                                    name: 'sites-siteId-content-contentType-categories',
-                                    params: {
-                                        siteId,
-                                        contentType: c.id
-                                    }
-                                }
-                            }
-                            /*,{
-                                type: 'item',
-                                id: 'settings',
-                                title: 'Settings',
-                                icon: 'mdi-cog',
-                                to: {                        
-                                    name: 'sites-siteId-content-contentType-settings',
-                                    params: {
-                                        siteId,
-                                        contentType: c.id
-                                    }
-                                }
-                            }*/]
+                                /*, {
+                                                                    type: 'item',
+                                                                    id: 'comments',
+                                                                    title: 'Comments',
+                                                                    icon: 'mdi-message',
+                                                                    to: {
+                                                                        name: 'sites-siteId-content-contentType-comments',
+                                                                        params: {
+                                                                            siteId,
+                                                                            contentType: c.id
+                                                                        }
+                                                                    }
+                                                                }, {
+                                                                    type: 'item',
+                                                                    id: 'categories',
+                                                                    title: 'Categories',
+                                                                    icon: 'mdi-shape',
+                                                                    to: {
+                                                                        name: 'sites-siteId-content-contentType-categories',
+                                                                        params: {
+                                                                            siteId,
+                                                                            contentType: c.id
+                                                                        }
+                                                                    }
+                                                                }
+                                                                ,{
+                                                                    type: 'item',
+                                                                    id: 'settings',
+                                                                    title: 'Settings',
+                                                                    icon: 'mdi-cog',
+                                                                    to: {                        
+                                                                        name: 'sites-siteId-content-contentType-settings',
+                                                                        params: {
+                                                                            siteId,
+                                                                            contentType: c.id
+                                                                        }
+                                                                    }
+                                                                }*/
+                            ]
                         }))
                     ]
                 },
@@ -294,16 +305,19 @@ export default {
                             params: {
                                 siteId,
                             }
-                        }
-                    },{
+                        },
+                    }, {
                         type: 'item',
-                        id: 'users',
-                        title: 'Users',
+                        id: 'members',
+                        title: 'Members',
                         icon: 'mdi-account-multiple',
                         to: {
-                            name: 'sites'
+                            name: 'sites-siteId-administration-members',
+                            params: {
+                                siteId,
+                            }
                         }
-                    },{
+                    }, {
                         type: 'item',
                         id: 'permissions',
                         title: 'Permissions',
@@ -315,8 +329,8 @@ export default {
                             }
                         }
                     }]
-                },                
-                
+                },
+
             ]
         }
     }
@@ -324,17 +338,7 @@ export default {
 </script>
 
 <style lang="scss">
-.v-list-item--active .v-icon {
-    //color: inherit;
-}
-
 .firebase-emulator-warning {
     display: none;
 }
-
-/*
-html { 
-  overflow-y: auto
-}
-*/
 </style>

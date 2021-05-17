@@ -58,7 +58,6 @@ export default {
 
       try {
 
-        //let { user } = 
         await this.$firebase.auth().signInWithEmailAndPassword(this.form.email, this.form.password)
         await this.$router.replace(this.$route.query.redirect_to || '/')
 
@@ -72,9 +71,9 @@ export default {
 
         }
 
-      } finally {
-        this.loading = false
       }
+      
+      this.loading = false
 
     },
   },

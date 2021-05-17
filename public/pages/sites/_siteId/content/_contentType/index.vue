@@ -1,67 +1,63 @@
 <template>
 <div>
-    <h1 class="text--primary">{{ $route.params.contentType.toUpperCase() }} List <span class="text-caption">sites/_siteId/content/_contentType/index.vue</span></h1>
 
-    <v-tabs>
-        <v-tab>Item One</v-tab>
-        <v-tab>Item Two</v-tab>
-        <v-tab>Item Three</v-tab>
-    </v-tabs>
+    <v-toolbar rounded elevation="1">
 
-    <v-divider></v-divider>
+        <v-toolbar-title>{{ $route.params.contentType.toUpperCase() }}</v-toolbar-title>
+        <v-spacer></v-spacer>
+        <v-btn color="primary" :to="{ query: {...$route.query, item: undefined, action: 'add'} }" exact>New Item</v-btn>
 
-    <v-card class="mt-12">
+        <v-dialog
+            :value="$route.query.item || $route.query.action"
+            :fullscreen="$vuetify.breakpoint.mobile"
+            :transition="$vuetify.breakpoint.mobile ? 'dialog-bottom-transition' : 'dialog-transition'"
+            @click:outside="close"
+            @keydown.esc="close"
+            max-width="500px"
+        >
 
-        <v-toolbar flat>
-            <v-toolbar-title>My CRUD</v-toolbar-title>
+            <v-toolbar dark color="primary" v-if="$vuetify.breakpoint.mobile">
+                <v-btn icon dark @click="close">
+                    <v-icon>mdi-close</v-icon>
+                </v-btn>
+                <v-toolbar-title v-if="['add', 'edit'].includes($route.query.action)">Edit item</v-toolbar-title>
+                <v-spacer></v-spacer>
+                <v-toolbar-items>
 
-            <v-divider class="mx-4" inset vertical></v-divider>
+                    <v-btn
+                        dark
+                        text
+                        @click="$refs.form.validate() && save()"
+                        v-if="$route.query.action == 'add'"
+                    >Add</v-btn>
+                    <v-btn
+                        dark
+                        text
+                        @click="$refs.form.validate() && save()"
+                        v-if="$route.query.action == 'edit'"
+                    >Save</v-btn>
+                    <v-btn
+                        dark
+                        text
+                        @click="remove"
+                        v-if="$route.query.action == 'delete'"
+                    >Delete</v-btn>
 
-            <v-spacer></v-spacer>
+                </v-toolbar-items>
+            </v-toolbar>
 
-            <v-btn
-                color="primary"
-                dark
-                class="mb-2"
-                @click="addItem"
-            >New Item</v-btn>
+            <v-card tile :loading="editItemLoading" :disabled="editItemLoading">
 
-            <v-dialog
-                :value="$route.query.item || $route.query.action"
-                :fullscreen="$vuetify.breakpoint.mobile"
-                :transition="$vuetify.breakpoint.mobile ? 'dialog-bottom-transition' : 'dialog-transition'"
-                @click:outside="close"
-                @keydown.esc="close"
-                max-width="500px"
-            >
+                <template>
 
-                <v-toolbar dark color="primary" v-if="$vuetify.breakpoint.mobile">
-                    <v-btn icon dark @click="close">
-                        <v-icon>mdi-close</v-icon>
-                    </v-btn>
-                    <v-toolbar-title v-if="['add', 'edit'].includes($route.query.action)">Edit item</v-toolbar-title>
-                    <v-spacer></v-spacer>
-                    <v-toolbar-items>
-                        <v-btn
-                            dark
-                            text
-                            @click="save"
-                            v-if="['add', 'edit'].includes($route.query.action)"
-                        >{{$route.query.action == 'edit' ? 'Save' : 'Add'}}</v-btn>
-                    </v-toolbar-items>
-                </v-toolbar>
+                    <v-card-title>
+                        <span class="headline" v-if="$route.query.action == 'add'">Add item</span>
+                        <span class="headline" v-if="$route.query.action == 'edit'">Edit item</span>
+                        <span class="headline" v-if="$route.query.action == 'delete'">Are you sure you want to delete this item?</span>
+                    </v-card-title>
 
-                <v-card :loading="editItemLoading" :disabled="editItemLoading">
-
-                    <template>
-
-                        <v-card-title>
-                            <span class="headline" v-if="$route.query.action == 'add'">Add item</span>
-                            <span class="headline" v-if="$route.query.action == 'edit'">Edit item</span>
-                            <span class="headline" v-if="$route.query.action == 'delete'">Are you sure you want to delete this item?</span>
-                        </v-card-title>
-
-                        <v-card-text v-if="$route.query.action == 'add' || $route.query.action == 'edit'">
+                    <v-card-text v-if="$route.query.action == 'add' || $route.query.action == 'edit'">
+                        <v-form ref="form" @submit.prevent="$refs.form.validate() && save()">
                             <v-container class="px-0">
                                 <v-row>
                                     <v-col cols="12">
@@ -70,41 +66,61 @@
                                     <v-col cols="12">
                                         <v-textarea v-model="editedItem.content" label="Content"></v-textarea>
                                     </v-col>
+
+                                    <v-col cols="12">
+                                        <v-autocomplete
+                                            placeholder="Start typing to Search"
+                                            :items="membersList"
+                                            v-model="editedItem.author"
+                                            label="Author"
+                                            item-text="displayName"
+                                            item-value="id"
+                                            return-object
+                                        >
+                                        </v-autocomplete>
+
+                                    </v-col>
+
+                                    <v-btn class="d-none" type="submit"></v-btn>
+
                                 </v-row>
                             </v-container>
-                        </v-card-text>
+                        </v-form>
+                    </v-card-text>
 
-                        <v-card-actions v-if="!$vuetify.breakpoint.mobile">
-                            <v-spacer></v-spacer>
-                            <v-btn color="primary" text @click="close">Cancel</v-btn>
-                            <v-btn
-                                color="primary"
-                                text
-                                @click="save"
-                                v-if="$route.query.action == 'add'"
-                            >Add</v-btn>
-                            <v-btn
-                                color="primary"
-                                text
-                                @click="save"
-                                v-if="$route.query.action == 'edit'"
-                            >Save</v-btn>
-                            <v-btn
-                                color="primary"
-                                text
-                                @click="remove"
-                                v-if="$route.query.action == 'delete'"
-                            >Delete</v-btn>
-                            <v-spacer></v-spacer>
-                        </v-card-actions>
+                    <v-card-actions v-if="!$vuetify.breakpoint.mobile">
+                        <v-spacer></v-spacer>
+                        <v-btn color="primary" text @click="close">Cancel</v-btn>
+                        <v-btn
+                            color="primary"
+                            text
+                            @click="$refs.form.validate() && save()"
+                            v-if="$route.query.action == 'add'"
+                        >Add</v-btn>
+                        <v-btn
+                            color="primary"
+                            text
+                            @click="$refs.form.validate() && save()"
+                            v-if="$route.query.action == 'edit'"
+                        >Save</v-btn>
+                        <v-btn
+                            color="primary"
+                            text
+                            @click="remove"
+                            v-if="$route.query.action == 'delete'"
+                        >Delete</v-btn>
+                        <v-spacer></v-spacer>
+                    </v-card-actions>
 
-                    </template>
+                </template>
 
-                </v-card>
+            </v-card>
 
-            </v-dialog>
+        </v-dialog>
 
-        </v-toolbar>
+    </v-toolbar>
+
+    <v-card class="mt-5">
 
         <v-data-table
             :headers="headers"
@@ -132,14 +148,31 @@
             </template>
 
             <template v-slot:item.actions="{ item }">
-                <v-icon small class="mr-2" @click="editItem(item)">mdi-pencil</v-icon>
-                <v-icon small @click="deleteItem(item)">mdi-delete</v-icon>
+
+                <v-btn icon :to="{ query: { ...$route.query, item: item.id, action: 'edit' } }" exact>
+                    <v-icon small>mdi-pencil</v-icon>
+                </v-btn>
+
+                <v-btn icon :to="{ query: { ...$route.query, item: item.id, action: 'delete' } }" exact>
+                    <v-icon small>mdi-delete</v-icon>
+                </v-btn>
+
             </template>
 
             <template v-slot:footer="opt">
                 <div class="v-data-footer py-2">
 
-                    <div class="v-data-footer__pagination">1-10 of many</div>
+                    <div class="v-data-footer__select">
+                        Rows per page:
+                        <v-select
+                            dense
+                            hide-details
+                            :items="[5, 10, 15]"
+                            v-model="limit"
+                        ></v-select>
+                    </div>
+                    <div class="v-data-footer__pagination">{{limit}} of many</div>
+
                     <div class="v-data-footer__icons-before">
                         <v-btn
                             depressed
@@ -169,7 +202,6 @@
         </v-data-table>
 
     </v-card>
-
 </div>
 </template>
 
@@ -182,24 +214,26 @@ export default {
             editedItem: {
                 title: '',
                 content: '',
+                author: {}
             },
             defaultItem: {
                 title: '',
                 content: '',
+                author: {}
             },
             items: [],
-            limit: 3,
+            limit: 5,
             loading: true,
             headers: [{
+                    text: 'Id',
+                    sortable: false,
+                    value: 'id'
+                },
+                {
                     text: 'Title',
                     align: 'start',
                     sortable: true,
                     value: 'title',
-                },
-                {
-                    text: 'Id',
-                    sortable: false,
-                    value: 'id'
                 },
                 {
                     text: 'Content',
@@ -217,6 +251,11 @@ export default {
                     value: 'updatedAt'
                 },
                 {
+                    text: 'Author',
+                    sortable: true,
+                    value: 'author.displayName'
+                },
+                {
                     text: 'Actions',
                     value: 'actions',
                     sortable: false
@@ -227,9 +266,14 @@ export default {
             hasAfter: [],
             hasBefore: [],
 
+            members: [],
         }
     },
     computed: {
+
+        membersList() {
+            return this.members.filter(m => m.userRef instanceof Object).map(m => m.userRef)
+        },
 
         query() {
 
@@ -298,7 +342,7 @@ export default {
                 this.editedItem = Object.assign({}, this.defaultItem, res || {})
             },
         },
-        
+
         startAfterDoc() {
 
             const {
@@ -330,7 +374,7 @@ export default {
                 return this.$firebase.firestore().doc(`sites/${siteId}/content/${contentType}/items/${endBefore}`)
             }
         },
-        
+
         hasAfter() {
             const item = this.items[0]
             const query = this.query
@@ -343,12 +387,12 @@ export default {
         hasBefore() {
             const item = this.items[this.items.length - 1]
             const query = this.query
-             
+
             if (item && !item.snapshot.metadata.hasPendingWrites) {
                 return query.startAfter(item.snapshot).limit(1)
             }
         },
-        
+
         items: {
             ref() {
 
@@ -376,12 +420,12 @@ export default {
                 if (startAfterDoc) {
 
                     query = query.startAfter(startAfterDoc.snapshot).limit(limit)
-                    queryStr += `.startAfter(doc).limit(limit)`
+                    queryStr += `.startAfter(doc).limit(${limit})`
 
                 } else if (endBeforeDoc) {
 
                     query = query.endBefore(endBeforeDoc.snapshot).limitToLast(limit)
-                    queryStr += `.endBefore( endBeforeDoc.snapshot ).limitToLast(limit)`
+                    queryStr += `.endBefore( endBeforeDoc.snapshot ).limitToLast(${limit})`
 
                 } else {
                     query = query.limit(limit)
@@ -400,6 +444,14 @@ export default {
                 this.loading = false
             },
             reset: false,
+        },
+        members: {
+            ref() {
+                const siteId = this.$route.params.siteId
+                if (!siteId) return
+                return this.$firebase.firestore().collection(`sites/${siteId}/members`)
+            },
+            wait: true,
         }
     },
 
@@ -457,42 +509,6 @@ export default {
 
         },
 
-        addItem() {
-
-            this.$router.push({
-                query: {
-                    ...this.$route.query,
-                    item: undefined,
-                    action: 'add'
-                }
-            })
-
-        },
-
-        editItem(item) {
-
-            this.$router.push({
-                query: {
-                    ...this.$route.query,
-                    item: item.id,
-                    action: 'edit',
-                }
-            })
-
-        },
-
-        deleteItem(item) {
-
-            this.$router.push({
-                query: {
-                    ...this.$route.query,
-                    item: item.id,
-                    action: 'delete',
-                }
-            })
-
-        },
-
         async close() {
 
             await this.$router.replace({
@@ -515,7 +531,8 @@ export default {
 
             const {
                 title,
-                content
+                content,
+                author,
             } = this.editedItem
 
             const {
@@ -529,8 +546,6 @@ export default {
                 }
             } = this.$route
 
-            const userUID = this.$store.state.user.uid
-
             const batch = this.$firebase.firestore().batch()
 
             let itemRef = this.$firebase.firestore().collection(`sites/${siteId}/content/${contentType}/items`)
@@ -543,12 +558,12 @@ export default {
             if (action == 'add') {
                 itemRef = itemRef.doc()
                 itemBody.createdAt = this.$firebase.firestore.FieldValue.serverTimestamp()
-                itemBody.author = this.$firebase.firestore().doc(`users/${userUID}`)
             } else {
                 itemRef = itemRef.doc(item)
             }
 
             itemBody.updatedAt = this.$firebase.firestore.FieldValue.serverTimestamp()
+            itemBody.author = this.$firebase.firestore().doc(`users/${author.id || this.$store.state.user.uid}`)
 
             batch.set(itemRef, itemBody, {
                 merge: true
@@ -556,6 +571,9 @@ export default {
 
             try {
                 await batch.commit()
+
+                this.close()
+
             } catch ({
                 code,
                 name,
@@ -566,7 +584,6 @@ export default {
 
             this.editItemLoading = false
 
-            this.close()
         },
 
         async remove() {
@@ -605,6 +622,11 @@ export default {
         },
 
     },
-    watch: {}
+    watch: {
+        '$route.query.action': {
+            handler(action) {},
+            immediate: true
+        }
+    }
 }
 </script>
