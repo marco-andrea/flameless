@@ -1,5 +1,5 @@
 # Flameless - a serverless multisite CMS (firebase)
-#### Video Demo: <URL HERE>
+#### Video Demo: https://youtu.be/XVE7lS2mTj4
 #### Description:
 [Flameless](https://flameless.web.app) is a serverless CMS using Google [Firebase](https://firebase.google.com/) with a static frontend with [NuxtJS](https://nuxtjs.org/).
 
@@ -12,7 +12,6 @@ The content has an author field, so it can only be edited by those who have the 
 With this project I had the intention of walking through many areas.
 Starting with continuous integration and delivery (CI/CD), serverless computing and NoSQL databases.
 Of the many platforms, I would choose Amazon Web Services, but for this project I liked the relative simplicity of google firebase. Since it easily integrates almost all solutions (authentication, realtime database, cloud functions and hosting)
-
 
 ## [.github/workflows/](.github/workflows/)
 Any change made in the repository publishes the changes in the firebase
